@@ -1,19 +1,40 @@
 // 小船航行和碰撞检测
 document.addEventListener('DOMContentLoaded', function() {
-    // 获取大陆数据
-    fetch('./continent_data/continent_data.json')
-        .then(response => response.json())
-        .then(data => {
-            // 初始化游戏
-            initGame(data);
-        })
-        .catch(error => {
-            console.error('加载大陆数据失败:', error);
-            alert('加载大陆数据失败，请确保已运行检测脚本生成数据。');
-        });
+    // 添加加载提示
+    const loadingIndicator = document.createElement('div');
+    loadingIndicator.className = 'loading-indicator';
+    loadingIndicator.innerHTML = '<div class="spinner"></div><p>加载中...</p>';
+    document.querySelector('.game-container').appendChild(loadingIndicator);
+    
+    // 提前加载地图图像
+    const mapImage = new Image();
+    mapImage.src = './original_map.png';
+    
+    // 同时获取大陆数据
+    mapImage.onload = function() {
+        // 图片已加载，现在获取大陆数据
+        fetch('./continent_data/continent_data.json')
+            .then(response => response.json())
+            .then(data => {
+                // 移除加载提示
+                loadingIndicator.remove();
+                
+                // 初始化游戏
+                initGame(data, mapImage);
+            })
+            .catch(error => {
+                console.error('加载大陆数据失败:', error);
+                loadingIndicator.innerHTML = '<p>加载失败，请刷新重试</p>';
+            });
+    };
+    
+    mapImage.onerror = function() {
+        loadingIndicator.innerHTML = '<p>地图图像加载失败，请刷新重试</p>';
+        console.error('地图图像加载失败');
+    };
 });
 
-function initGame(continentData) {
+function initGame(continentData, mapImage) {
     // 获取DOM元素
     const mapCanvas = document.getElementById('mapCanvas');
     const ship = document.getElementById('ship');
@@ -22,10 +43,6 @@ function initGame(continentData) {
     // 设置画布大小
     mapCanvas.width = 1024;
     mapCanvas.height = 605;
-    
-    // 加载地图图像
-    const mapImage = new Image();
-    mapImage.src = './original_map.png';
     
     // 小船状态
     const shipState = {
@@ -106,17 +123,14 @@ function initGame(continentData) {
     });
     
     // 绘制地图
-    mapImage.onload = function() {
-        // 绘制地图
-        ctx.drawImage(mapImage, 0, 0, mapCanvas.width, mapCanvas.height);
-        
-        // 初始化小船位置
-        initializeShipPosition(shipState, continentData);
-        updateShipPosition(ship, shipState);
-        
-        // 开始游戏循环
-        gameLoop();
-    };
+    ctx.drawImage(mapImage, 0, 0, mapCanvas.width, mapCanvas.height);
+    
+    // 初始化小船位置
+    initializeShipPosition(shipState, continentData);
+    updateShipPosition(ship, shipState);
+    
+    // 开始游戏循环
+    gameLoop();
     
     // 游戏主循环
     function gameLoop() {
@@ -251,194 +265,194 @@ function initGame(continentData) {
         
         ctx.restore();
     }
+}
+
+// 初始化小船位置，确保在海洋中
+function initializeShipPosition(shipState, continentData) {
+    let validPosition = false;
+    let attempts = 0;
+    const maxAttempts = 100;
     
-    // 初始化小船位置，确保在海洋中
-    function initializeShipPosition(shipState, continentData) {
-        let validPosition = false;
-        let attempts = 0;
-        const maxAttempts = 100;
+    while (!validPosition && attempts < maxAttempts) {
+        shipState.x = Math.random() * (1024 - 100) + 50;
+        shipState.y = Math.random() * (605 - 100) + 50;
         
-        while (!validPosition && attempts < maxAttempts) {
-            shipState.x = Math.random() * (mapCanvas.width - 100) + 50;
-            shipState.y = Math.random() * (mapCanvas.height - 100) + 50;
-            
-            if (!isCollidingWithContinents(shipState, continentData)) {
-                validPosition = true;
-            }
-            
-            attempts++;
+        if (!isCollidingWithContinents(shipState, continentData)) {
+            validPosition = true;
         }
         
-        // 如果找不到，使用固定位置
-        if (!validPosition) {
-            shipState.x = mapCanvas.width / 2;
-            shipState.y = mapCanvas.height / 2;
-        }
+        attempts++;
     }
     
-    // 更新小船移动
-    function updateShipMovement(shipState, keys) {
-        // 根据键盘输入计算速度
-        shipState.velocityX = 0;
-        shipState.velocityY = 0;
-        
-        if (keys.ArrowUp) {
-            shipState.velocityY = -shipState.speed;
-            shipState.rotation = 0;
-        }
-        if (keys.ArrowDown) {
-            shipState.velocityY = shipState.speed;
-            shipState.rotation = 180;
-        }
-        if (keys.ArrowLeft) {
-            shipState.velocityX = -shipState.speed;
-            shipState.rotation = 270;
-        }
-        if (keys.ArrowRight) {
-            shipState.velocityX = shipState.speed;
-            shipState.rotation = 90;
-        }
-        
-        // 对角线移动
-        if (keys.ArrowUp && keys.ArrowLeft) {
-            shipState.rotation = 315;
-        } else if (keys.ArrowUp && keys.ArrowRight) {
-            shipState.rotation = 45;
-        } else if (keys.ArrowDown && keys.ArrowLeft) {
-            shipState.rotation = 225;
-        } else if (keys.ArrowDown && keys.ArrowRight) {
-            shipState.rotation = 135;
-        }
-        
-        // 计算新位置
-        shipState.x += shipState.velocityX;
-        shipState.y += shipState.velocityY;
-        
-        // 防止船出界
-        shipState.x = Math.max(shipState.width/2, Math.min(mapCanvas.width - shipState.width/2, shipState.x));
-        shipState.y = Math.max(shipState.height/2, Math.min(mapCanvas.height - shipState.height/2, shipState.y));
+    // 如果找不到，使用固定位置
+    if (!validPosition) {
+        shipState.x = 1024 / 2;
+        shipState.y = 605 / 2;
+    }
+}
+
+// 更新小船移动
+function updateShipMovement(shipState, keys) {
+    // 根据键盘输入计算速度
+    shipState.velocityX = 0;
+    shipState.velocityY = 0;
+    
+    if (keys.ArrowUp) {
+        shipState.velocityY = -shipState.speed;
+        shipState.rotation = 0;
+    }
+    if (keys.ArrowDown) {
+        shipState.velocityY = shipState.speed;
+        shipState.rotation = 180;
+    }
+    if (keys.ArrowLeft) {
+        shipState.velocityX = -shipState.speed;
+        shipState.rotation = 270;
+    }
+    if (keys.ArrowRight) {
+        shipState.velocityX = shipState.speed;
+        shipState.rotation = 90;
     }
     
-    // 处理碰撞
-    function handleCollisions(shipState, continentData) {
+    // 对角线移动
+    if (keys.ArrowUp && keys.ArrowLeft) {
+        shipState.rotation = 315;
+    } else if (keys.ArrowUp && keys.ArrowRight) {
+        shipState.rotation = 45;
+    } else if (keys.ArrowDown && keys.ArrowLeft) {
+        shipState.rotation = 225;
+    } else if (keys.ArrowDown && keys.ArrowRight) {
+        shipState.rotation = 135;
+    }
+    
+    // 计算新位置
+    shipState.x += shipState.velocityX;
+    shipState.y += shipState.velocityY;
+    
+    // 防止船出界
+    shipState.x = Math.max(shipState.width/2, Math.min(1024 - shipState.width/2, shipState.x));
+    shipState.y = Math.max(shipState.height/2, Math.min(605 - shipState.height/2, shipState.y));
+}
+
+// 处理碰撞
+function handleCollisions(shipState, continentData) {
+    if (isCollidingWithContinents(shipState, continentData)) {
+        // 碰撞反弹 - 将船移回上一个位置
+        shipState.x -= shipState.velocityX * 1.5;
+        shipState.y -= shipState.velocityY * 1.5;
+        
+        // 如果仍然碰撞，可能陷入边缘，尝试更远距离移动
         if (isCollidingWithContinents(shipState, continentData)) {
-            // 碰撞反弹 - 将船移回上一个位置
-            shipState.x -= shipState.velocityX * 1.5;
-            shipState.y -= shipState.velocityY * 1.5;
+            shipState.x -= shipState.velocityX * 2;
+            shipState.y -= shipState.velocityY * 2;
+        }
+        
+        // 添加一些反弹效果
+        shipState.velocityX = -shipState.velocityX * 0.5;
+        shipState.velocityY = -shipState.velocityY * 0.5;
+    }
+}
+
+// 检测小船是否与大陆碰撞
+function isCollidingWithContinents(shipState, continentData) {
+    const { continents } = continentData;
+    const shipHitbox = {
+        x: shipState.x - shipState.width/2,
+        y: shipState.y - shipState.height/2,
+        width: shipState.width,
+        height: shipState.height
+    };
+    
+    // 检查所有大陆
+    for (const continent of continents) {
+        // 先做边界框检查（快速筛选）
+        const bbox = continent.bounding_box;
+        
+        if (isOverlappingRect(shipHitbox, {
+            x: bbox[0],
+            y: bbox[1],
+            width: bbox[2],
+            height: bbox[3]
+        })) {
+            // 然后使用点多边形检测做更精细的检测
+            const points = continent.simplified_contour;
             
-            // 如果仍然碰撞，可能陷入边缘，尝试更远距离移动
-            if (isCollidingWithContinents(shipState, continentData)) {
-                shipState.x -= shipState.velocityX * 2;
-                shipState.y -= shipState.velocityY * 2;
+            // 检查船的四个角是否在多边形内
+            const shipCorners = [
+                {x: shipHitbox.x, y: shipHitbox.y},
+                {x: shipHitbox.x + shipHitbox.width, y: shipHitbox.y},
+                {x: shipHitbox.x, y: shipHitbox.y + shipHitbox.height},
+                {x: shipHitbox.x + shipHitbox.width, y: shipHitbox.y + shipHitbox.height}
+            ];
+            
+            for (const corner of shipCorners) {
+                if (isPointInPolygon(corner, points)) {
+                    return true;
+                }
             }
             
-            // 添加一些反弹效果
-            shipState.velocityX = -shipState.velocityX * 0.5;
-            shipState.velocityY = -shipState.velocityY * 0.5;
-        }
-    }
-    
-    // 检测小船是否与大陆碰撞
-    function isCollidingWithContinents(shipState, continentData) {
-        const { continents } = continentData;
-        const shipHitbox = {
-            x: shipState.x - shipState.width/2,
-            y: shipState.y - shipState.height/2,
-            width: shipState.width,
-            height: shipState.height
-        };
-        
-        // 检查所有大陆
-        for (const continent of continents) {
-            // 先做边界框检查（快速筛选）
-            const bbox = continent.bounding_box;
+            // 检查多边形的边是否与船的边相交
+            const shipEdges = [
+                [{x: shipHitbox.x, y: shipHitbox.y}, {x: shipHitbox.x + shipHitbox.width, y: shipHitbox.y}],
+                [{x: shipHitbox.x + shipHitbox.width, y: shipHitbox.y}, {x: shipHitbox.x + shipHitbox.width, y: shipHitbox.y + shipHitbox.height}],
+                [{x: shipHitbox.x + shipHitbox.width, y: shipHitbox.y + shipHitbox.height}, {x: shipHitbox.x, y: shipHitbox.y + shipHitbox.height}],
+                [{x: shipHitbox.x, y: shipHitbox.y + shipHitbox.height}, {x: shipHitbox.x, y: shipHitbox.y}]
+            ];
             
-            if (isOverlappingRect(shipHitbox, {
-                x: bbox[0],
-                y: bbox[1],
-                width: bbox[2],
-                height: bbox[3]
-            })) {
-                // 然后使用点多边形检测做更精细的检测
-                const points = continent.simplified_contour;
+            for (let i = 0; i < points.length; i++) {
+                const j = (i + 1) % points.length;
+                const edge = [{x: points[i][0], y: points[i][1]}, {x: points[j][0], y: points[j][1]}];
                 
-                // 检查船的四个角是否在多边形内
-                const shipCorners = [
-                    {x: shipHitbox.x, y: shipHitbox.y},
-                    {x: shipHitbox.x + shipHitbox.width, y: shipHitbox.y},
-                    {x: shipHitbox.x, y: shipHitbox.y + shipHitbox.height},
-                    {x: shipHitbox.x + shipHitbox.width, y: shipHitbox.y + shipHitbox.height}
-                ];
-                
-                for (const corner of shipCorners) {
-                    if (isPointInPolygon(corner, points)) {
+                for (const shipEdge of shipEdges) {
+                    if (doLinesIntersect(shipEdge[0], shipEdge[1], edge[0], edge[1])) {
                         return true;
                     }
                 }
-                
-                // 检查多边形的边是否与船的边相交
-                const shipEdges = [
-                    [{x: shipHitbox.x, y: shipHitbox.y}, {x: shipHitbox.x + shipHitbox.width, y: shipHitbox.y}],
-                    [{x: shipHitbox.x + shipHitbox.width, y: shipHitbox.y}, {x: shipHitbox.x + shipHitbox.width, y: shipHitbox.y + shipHitbox.height}],
-                    [{x: shipHitbox.x + shipHitbox.width, y: shipHitbox.y + shipHitbox.height}, {x: shipHitbox.x, y: shipHitbox.y + shipHitbox.height}],
-                    [{x: shipHitbox.x, y: shipHitbox.y + shipHitbox.height}, {x: shipHitbox.x, y: shipHitbox.y}]
-                ];
-                
-                for (let i = 0; i < points.length; i++) {
-                    const j = (i + 1) % points.length;
-                    const edge = [{x: points[i][0], y: points[i][1]}, {x: points[j][0], y: points[j][1]}];
-                    
-                    for (const shipEdge of shipEdges) {
-                        if (doLinesIntersect(shipEdge[0], shipEdge[1], edge[0], edge[1])) {
-                            return true;
-                        }
-                    }
-                }
             }
         }
+    }
+    
+    return false;
+}
+
+// 更新小船DOM位置
+function updateShipPosition(shipElement, shipState) {
+    shipElement.style.left = `${shipState.x}px`;
+    shipElement.style.top = `${shipState.y}px`;
+    shipElement.style.transform = `translate(-50%, -50%) rotate(${shipState.rotation}deg)`;
+}
+
+// 工具函数: 检查两个矩形是否重叠
+function isOverlappingRect(rect1, rect2) {
+    return !(
+        rect1.x + rect1.width < rect2.x ||
+        rect1.x > rect2.x + rect2.width ||
+        rect1.y + rect1.height < rect2.y ||
+        rect1.y > rect2.y + rect2.height
+    );
+}
+
+// 工具函数: 检查点是否在多边形内
+function isPointInPolygon(point, polygon) {
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const xi = polygon[i][0], yi = polygon[i][1];
+        const xj = polygon[j][0], yj = polygon[j][1];
         
-        return false;
-    }
-    
-    // 更新小船DOM位置
-    function updateShipPosition(shipElement, shipState) {
-        shipElement.style.left = `${shipState.x}px`;
-        shipElement.style.top = `${shipState.y}px`;
-        shipElement.style.transform = `translate(-50%, -50%) rotate(${shipState.rotation}deg)`;
-    }
-    
-    // 工具函数: 检查两个矩形是否重叠
-    function isOverlappingRect(rect1, rect2) {
-        return !(
-            rect1.x + rect1.width < rect2.x ||
-            rect1.x > rect2.x + rect2.width ||
-            rect1.y + rect1.height < rect2.y ||
-            rect1.y > rect2.y + rect2.height
-        );
-    }
-    
-    // 工具函数: 检查点是否在多边形内
-    function isPointInPolygon(point, polygon) {
-        let inside = false;
-        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-            const xi = polygon[i][0], yi = polygon[i][1];
-            const xj = polygon[j][0], yj = polygon[j][1];
-            
-            const intersect = ((yi > point.y) !== (yj > point.y))
-                && (point.x < (xj - xi) * (point.y - yi) / (yj - yi) + xi);
-            
-            if (intersect) inside = !inside;
-        }
+        const intersect = ((yi > point.y) !== (yj > point.y))
+            && (point.x < (xj - xi) * (point.y - yi) / (yj - yi) + xi);
         
-        return inside;
+        if (intersect) inside = !inside;
     }
     
-    // 工具函数: 检查两条线段是否相交
-    function doLinesIntersect(p1, p2, p3, p4) {
-        function ccw(a, b, c) {
-            return (c.y - a.y) * (b.x - a.x) > (b.y - a.y) * (c.x - a.x);
-        }
-        
-        return ccw(p1, p3, p4) !== ccw(p2, p3, p4) && ccw(p1, p2, p3) !== ccw(p1, p2, p4);
+    return inside;
+}
+
+// 工具函数: 检查两条线段是否相交
+function doLinesIntersect(p1, p2, p3, p4) {
+    function ccw(a, b, c) {
+        return (c.y - a.y) * (b.x - a.x) > (b.y - a.y) * (c.x - a.x);
     }
+    
+    return ccw(p1, p3, p4) !== ccw(p2, p3, p4) && ccw(p1, p2, p3) !== ccw(p1, p2, p4);
 } 

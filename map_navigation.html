@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>北京四中历史课大航海时代AI体验</title>
     <link rel="stylesheet" href="./style.css">
+    <link rel="preload" href="./original_map.png" as="image">
+    <link rel="preload" href="./ship.png" as="image">
+    <script>
+        // 预加载大陆数据
+        fetch('./continent_data/continent_data.json', { 
+            headers: { 'Cache-Control': 'max-age=3600' } 
+        });
+    </script>
 </head>
 <body>
     <div class="container">
