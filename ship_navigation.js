@@ -1,7 +1,7 @@
 // 小船航行和碰撞检测
 document.addEventListener('DOMContentLoaded', function() {
     // 获取大陆数据
-    fetch('continent_data/continent_data.json')
+    fetch('./continent_data/continent_data.json')
         .then(response => response.json())
         .then(data => {
             // 初始化游戏
@@ -25,7 +25,7 @@ function initGame(continentData) {
     
     // 加载地图图像
     const mapImage = new Image();
-    mapImage.src = 'original_map.png';
+    mapImage.src = './original_map.png';
     
     // 小船状态
     const shipState = {
