@@ -48,13 +48,6 @@ const historicalLocations = [
         x: 635,
         y: 273,
         description: '印度重要的香料贸易中心'
-    },
-    {
-        id: 'philippines',
-        name: '菲律宾群岛',
-        x: 796,
-        y: 251,
-        description: '麦哲伦远航到达的岛屿'
     }
 ];
 
