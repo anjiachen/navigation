@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>海上航行模拟</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>海上航行模拟</h1>
+        <div class="main-content">
+            <div class="game-container">
+                <canvas id="mapCanvas"></canvas>
+                <div id="ship"></div>
+                <!-- 地点标记将由JavaScript动态添加 -->
+            </div>
+            <div class="instructions-panel">
+                <h2>使用说明</h2>
+                <div class="instruction-section">
+                    <h3>基本操作</h3>
+                    <ul>
+                        <li>使用键盘方向键 <kbd>←</kbd> <kbd>↑</kbd> <kbd>→</kbd> <kbd>↓</kbd> 控制小船慢速航行</li>
+                        <li>按住 <kbd class="a-key-hint">A</kbd> 键可开启追踪模式，显示航线虚线和航行数据</li>
+                        <li>碰到大陆边缘会自动反弹</li>
+                    </ul>
+                </div>
+                <div class="instruction-section">
+                    <h3>地点标记</h3>
+                    <ul>
+                        <li>地图上的红色标记点代表15世纪重要的航海地点</li>
+                        <li>鼠标悬停可查看地点详细信息</li>
+                        <li>可用鼠标拖动调整各地点位置</li>
+                    </ul>
+                </div>
+                <div class="instruction-section">
+                    <h3>航行数据说明</h3>
+                    <ul>
+                        <li><strong>距离计算</strong>：1像素 = 2海里</li>
+                        <li><strong>时间估算</strong>：基于15世纪船只平均速度每天航行约20海里</li>
+                        <li><strong>计算因素</strong>：考虑了恶劣天气、停靠补给、等待季风等因素</li>
+                        <li><strong>成本构成</strong>：船员工资(50金币/天)、船只折旧(10金币/天)、补给(15金币/天)、港口费用(每20天100金币)</li>
+                    </ul>
+                </div>
+                <div class="instruction-section">
+                    <h3>历史背景</h3>
+                    <p>本模拟基于15世纪的大航海时代，当时葡萄牙和西班牙等国的航海家们开始进行远洋探索。达伽马、麦哲伦等人的航行从欧洲经过非洲好望角到达亚洲，开辟了新的航线，为世界贸易和文化交流打开了大门。</p>
+                </div>
+            </div>
+        </div>
+        <div class="controls">
+            <p>使用键盘方向键 ← ↑ → ↓ 控制小船慢速航行</p>
+            <p>按住 <span class="a-key-hint">A</span> 键可开启追踪模式（显示航线虚线和15世纪航行数据）</p>
+            <p>碰到大陆边缘会反弹，地图上的标记点可以拖动</p>
+        </div>
+    </div>
+    <script src="ship_navigation.js"></script>
+    <script type="module">
+        import { initializeLocationMarkers } from './locations.js';
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化地点标记
+            initializeLocationMarkers();
+        });
+    </script>
+</body>
+</html> 
